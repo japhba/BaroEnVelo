@@ -1,6 +1,7 @@
 package com.japhba.baroenvelo
 
 import android.app.Activity
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -18,6 +19,8 @@ import java.io.IOException
 import java.util.*
 import android.location.LocationManager
 import android.content.Intent
+import android.content.IntentFilter
+import android.support.v4.content.LocalBroadcastManager
 
 class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
@@ -31,7 +34,30 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             textView.text = "Heute ist wirklich Sonntag"
         }
 
-        startService(Intent(this, LocationTrackingService::class.java))
+        val localBroadcastManager = LocalBroadcastManager.getInstance(this)
+
+        // Bind our "serverReady" listener BEFORE we start the Service,
+        // in case it happens to initialize quickly
+        localBroadcastManager.registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                // We can stop listening immediately
+                localBroadcastManager.unregisterReceiver(this)
+
+                // Now that the Service is ready, we can start sending it messages.
+                // You can do this from any activity
+                localBroadcastManager
+                        .sendBroadcast(Intent(LocationTrackingService.INTENT)
+                                .putExtra("operation", "doSomething"))
+            }
+            // defined in ServerService below
+        }, IntentFilter(LocationTrackingService.INTENT))
+
+        val context = applicationContext
+        val intent = Intent(context, LocationTrackingService::class.java)
+        if (context != null) {
+            context.startService(intent)
+        }
+
     }
 
     val sensorManager: SensorManager by lazy {

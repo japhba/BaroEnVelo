@@ -11,6 +11,10 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
+import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import android.support.v4.content.LocalBroadcastManager
 
 class LocationTrackingService : Service() {
 
@@ -24,6 +28,22 @@ class LocationTrackingService : Service() {
     }
 
     override fun onCreate() {
+
+        val localBroadcastManager = LocalBroadcastManager.getInstance(this)
+
+        // Start listening for relevant events BEFORE announcing readiness...
+        // that's basically the whole point of announcing ready.
+        localBroadcastManager.registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                // Service can take appropriate action now
+                Log.i("APP", "Service got intent with action: ${intent.action} and operation ${intent.getStringExtra("operation")}")
+            }
+        }, IntentFilter("Hallo"))
+
+        // Everything is squared away, let's signal we can start handling messages.
+        localBroadcastManager.sendBroadcast(Intent("Hallo"))
+
+
         if (locationManager == null)
             locationManager = applicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
@@ -60,6 +80,10 @@ class LocationTrackingService : Service() {
     companion object {
         val TAG = "LocationTrackingService"
 
+        const val INTENT = "Koordinaten"
+
+        var coords: Location? = null
+
         val INTERVAL = 1000.toLong() // In milliseconds
         val DISTANCE = 10.toFloat() // In meters
 
@@ -74,7 +98,7 @@ class LocationTrackingService : Service() {
 
             override fun onLocationChanged(location: Location?) {
                 lastLocation.set(location)
-                Log.w(TAG, "coord updated")
+                Log.i(TAG, lastLocation.toString())
             }
 
             override fun onProviderDisabled(provider: String?) {
