@@ -11,14 +11,19 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
-import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.support.v4.content.LocalBroadcastManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorManager
+
+
 
 class LocationTrackingService : Service() {
 
     var locationManager: LocationManager? = null
+    var sensorManager2: SensorManager? = null
 
     override fun onBind(intent: Intent?) = null
 
@@ -46,6 +51,18 @@ class LocationTrackingService : Service() {
 
         if (locationManager == null)
             locationManager = applicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            sensorManager2 = applicationContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+
+
+        var sensorManager = sensorManager2
+        sensorManager?.registerListener(
+                LTRSensorListener(),
+                sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE),
+                SensorManager.SENSOR_DELAY_NORMAL
+        )
+
+
+
 
         try {
             locationManager?.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, INTERVAL, DISTANCE, locationListeners[1])
@@ -83,6 +100,7 @@ class LocationTrackingService : Service() {
         const val INTENT = "Koordinaten"
 
         var coords: Location? = null
+        var alt: String? = null
 
         val INTERVAL = 1000.toLong() // In milliseconds
         val DISTANCE = 10.toFloat() // In meters
@@ -98,7 +116,9 @@ class LocationTrackingService : Service() {
 
             override fun onLocationChanged(location: Location?) {
                 lastLocation.set(location)
+                coords = lastLocation
                 Log.i(TAG, lastLocation.toString())
+                updateData(lastLocation, "alt")
             }
 
             override fun onProviderDisabled(provider: String?) {
@@ -111,6 +131,27 @@ class LocationTrackingService : Service() {
             }
 
         }
+
+        class LTRSensorListener: android.hardware.SensorEventListener {
+
+            override fun onSensorChanged(event: SensorEvent?) {
+                val pressure = event!!.values[0]
+                alt = SensorManager.getAltitude(
+                        SensorManager.PRESSURE_STANDARD_ATMOSPHERE, pressure).toString()
+                updateData(coords, alt!!)
+            }
+
+
+            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
+
+            }
+        }
+
+        fun updateData(loc: Location?, alt: String) {
+            Log.i("Data", loc.toString() + alt)
+        }
+
+
     }
 
 }
