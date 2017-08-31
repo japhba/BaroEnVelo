@@ -20,7 +20,15 @@ import java.util.*
 import android.location.LocationManager
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Handler
 import android.support.v4.content.LocalBroadcastManager
+import android.widget.Button
+import ninja.sakib.pultusorm.annotations.AutoIncrement
+import ninja.sakib.pultusorm.annotations.Ignore
+import ninja.sakib.pultusorm.annotations.PrimaryKey
+import ninja.sakib.pultusorm.core.PultusORM
+import ninja.sakib.pultusorm.core.PultusORMQuery
+import ninja.sakib.pultusorm.exceptions.PultusORMException
 
 class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
@@ -29,9 +37,20 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_kontrollzentrum)
 
+
         val textView: TextView = findViewById(R.id.Anzeige)
         textView.setOnClickListener {
             textView.text = "Heute ist wirklich Sonntag"
+        }
+
+        val startBtn: Button = findViewById(R.id.start)
+        startBtn.setOnClickListener {
+            Log.i("Halli", "Hallo")
+            val context = applicationContext
+            val intent = Intent(context, LocationTrackingService::class.java)
+            if (context != null) {
+                context.startService(intent)
+            }
         }
 
         val localBroadcastManager = LocalBroadcastManager.getInstance(this)
@@ -52,11 +71,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             // defined in ServerService below
         }, IntentFilter(LocationTrackingService.INTENT))
 
-        val context = applicationContext
-        val intent = Intent(context, LocationTrackingService::class.java)
-        if (context != null) {
-            context.startService(intent)
-        }
+
 
     }
 

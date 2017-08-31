@@ -17,7 +17,14 @@ import android.support.v4.content.LocalBroadcastManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorManager
+import ninja.sakib.pultusorm.core.PultusORM
 
+
+class Dreipunkt {
+    var lat: Double = 0.0
+    var lon: Double = 0.0
+    var alt: Double = 0.0
+}
 
 
 class LocationTrackingService : Service() {
@@ -118,6 +125,7 @@ class LocationTrackingService : Service() {
                 lastLocation.set(location)
                 coords = lastLocation
                 Log.i(TAG, lastLocation.toString())
+
                 updateData(lastLocation, "alt")
             }
 
@@ -149,6 +157,21 @@ class LocationTrackingService : Service() {
 
         fun updateData(loc: Location?, alt: String) {
             Log.i("Data", loc.toString() + alt)
+            val appPath = "/data/user/0/com.japhba.baroenvelo/files"
+            val database: PultusORM = PultusORM("local.db", appPath)
+
+            val dreipunkt: Dreipunkt = Dreipunkt()
+            if (loc != null) {
+                dreipunkt.lat = loc.latitude
+            }
+            if (loc != null) {
+                dreipunkt.lon = loc.longitude
+            }
+            //TODO: fancy pressure normalisation
+            dreipunkt.alt = alt.toDouble()
+
+            database.save(dreipunkt)
+
         }
 
 
