@@ -23,12 +23,15 @@ import android.content.IntentFilter
 import android.os.Handler
 import android.support.v4.content.LocalBroadcastManager
 import android.widget.Button
+import com.github.kittinunf.fuel.Fuel
 import ninja.sakib.pultusorm.annotations.AutoIncrement
 import ninja.sakib.pultusorm.annotations.Ignore
 import ninja.sakib.pultusorm.annotations.PrimaryKey
 import ninja.sakib.pultusorm.core.PultusORM
 import ninja.sakib.pultusorm.core.PultusORMQuery
 import ninja.sakib.pultusorm.exceptions.PultusORMException
+import java.io.File
+import java.nio.file.FileSystem
 
 class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
@@ -53,6 +56,15 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             }
         }
 
+        val uploadBtn: Button = findViewById(R.id.upload)
+        uploadBtn.setOnClickListener {
+            //Fuel.upload("/post").source { request, url ->
+                //val appPath: String = "/data/user/0/com.japhba.baroenvelo/files/"
+                //val filename: String = "local.db"
+                //val database: File = File(appPath, filename)
+            //}
+        }
+
         val localBroadcastManager = LocalBroadcastManager.getInstance(this)
 
         // Bind our "serverReady" listener BEFORE we start the Service,
@@ -70,8 +82,6 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             }
             // defined in ServerService below
         }, IntentFilter(LocationTrackingService.INTENT))
-
-
 
     }
 

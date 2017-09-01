@@ -23,7 +23,7 @@ import ninja.sakib.pultusorm.core.PultusORM
 class Dreipunkt {
     var lat: Double = 0.0
     var lon: Double = 0.0
-    var alt: Double = 0.0
+    var alt: String = ""
 }
 
 
@@ -168,7 +168,7 @@ class LocationTrackingService : Service() {
                 dreipunkt.lon = loc.longitude
             }
             //TODO: fancy pressure normalisation
-            dreipunkt.alt = alt.toDouble()
+            dreipunkt.alt = alt
 
             database.save(dreipunkt)
 
