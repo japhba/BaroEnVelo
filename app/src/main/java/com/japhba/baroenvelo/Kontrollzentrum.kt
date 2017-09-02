@@ -65,6 +65,12 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             //}
         }
 
+        val mapBtn: Button = findViewById(R.id.viewMap)
+        mapBtn.setOnClickListener {
+            val showMap = Intent(this, Karte::class.java)
+            startActivity(showMap)
+        }
+
         val localBroadcastManager = LocalBroadcastManager.getInstance(this)
 
         // Bind our "serverReady" listener BEFORE we start the Service,

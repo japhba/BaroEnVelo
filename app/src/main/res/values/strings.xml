@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">BaroEnVelo</string>
+    <string name="access_token">pk.eyJ1IjoiamFwaGJhIiwiYSI6ImNpbTM4dDF3MTAwcHl1am00dTd6am03M2wifQ.H9LnlceaPGF_3RDSAt-UFQ</string>
 </resources>
