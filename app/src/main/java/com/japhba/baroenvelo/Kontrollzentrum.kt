@@ -40,6 +40,21 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_kontrollzentrum)
 
+        if (!getSharedPreferences("Information", Context.MODE_PRIVATE).contains("user_id")) {
+
+            val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE);
+            val editor = sharedPref.edit();
+
+            // Save your string in SharedPref
+            val random = Random()
+            val randUserID = random.nextInt((9999-1000)+1)+1000
+            editor.putInt("user_id", randUserID)
+            editor.commit();
+
+        }
+
+
+        Log.i("user", getSharedPreferences("Information", Context.MODE_PRIVATE).getString("user_id",""))
 
         val textView: TextView = findViewById(R.id.Anzeige)
         textView.setOnClickListener {
@@ -58,11 +73,28 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
         val uploadBtn: Button = findViewById(R.id.upload)
         uploadBtn.setOnClickListener {
-            //Fuel.upload("/post").source { request, url ->
-                //val appPath: String = "/data/user/0/com.japhba.baroenvelo/files/"
-                //val filename: String = "local.db"
-                //val database: File = File(appPath, filename)
-            //}
+            val appPath = "/data/user/0/com.japhba.baroenvelo/files"
+            val database: PultusORM = PultusORM("local2.db", appPath)
+
+            val punkte = database.find(Dreipunkt())
+            var lat = (punkte[0] as Dreipunkt).lat.toString()
+            var lng = (punkte[0] as Dreipunkt).lng.toString()
+            var alt = (punkte[0] as Dreipunkt).alt.toString()
+
+            for ((index, value) in punkte.withIndex()) {
+                if (index == 0) continue
+                val punkt = value as Dreipunkt
+                lat += ":" + punkt.lat.toString()
+                lng += ":" + punkt.lng.toString()
+                alt += ":" + punkt.alt.toString()
+            }
+
+            //Log.i("request" , "{ \"userID\" : \"admin\" , \"lat\" : " + lat +" , \"lon\" : "  + lng +  " , \"alt\" : " + alt +  " , \"sternzeit\" : \"0\" }")
+            Fuel.post("http://baroenvelo.azurewebsites.net/insert.php", listOf("userID" to "admin", "lat" to "3:3.0:4:-4.3", "lng" to "3:4:5:6", "alt" to "1:2:3:4", "sternzeit" to "0")).response { request, response, result ->
+
+                Log.i("debug", request.toString())
+                Log.i("response", response.toString())
+            }
         }
 
         val mapBtn: Button = findViewById(R.id.viewMap)

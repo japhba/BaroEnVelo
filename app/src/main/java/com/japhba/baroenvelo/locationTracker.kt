@@ -22,7 +22,7 @@ import ninja.sakib.pultusorm.core.PultusORM
 
 class Dreipunkt {
     var lat: Double = 0.0
-    var lon: Double = 0.0
+    var lng: Double = 0.0
     var alt: String = ""
 }
 
@@ -158,14 +158,14 @@ class LocationTrackingService : Service() {
         fun updateData(loc: Location?, alt: String) {
             Log.i("Data", loc.toString() + alt)
             val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-            val database: PultusORM = PultusORM("local.db", appPath)
+            val database: PultusORM = PultusORM("local2.db", appPath)
 
             val dreipunkt: Dreipunkt = Dreipunkt()
             if (loc != null) {
                 dreipunkt.lat = loc.latitude
             }
             if (loc != null) {
-                dreipunkt.lon = loc.longitude
+                dreipunkt.lng = loc.longitude
             }
             //TODO: fancy pressure normalisation
             dreipunkt.alt = alt
