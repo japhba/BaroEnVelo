@@ -12,8 +12,10 @@ import com.mapbox.mapboxsdk.maps.MapView
 import android.graphics.Color.parseColor
 import android.text.TextUtils
 import android.util.Log
+import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.annotations.PolylineOptions
 import com.mapbox.mapboxsdk.geometry.LatLng
+import ninja.sakib.pultusorm.core.PultusORM
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.nio.charset.Charset
@@ -29,9 +31,9 @@ class Karte: AppCompatActivity(), OnMapReadyCallback {
         mapboxMap.addPolyline(PolylineOptions()
                 .addAll(points)
                 .color(Color.parseColor("#b2ebf2"))
-                .width(0.2f))
+                .width(0.5f))
                 //.alpha = 0.1F
-    }
+           }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,33 +53,15 @@ class Karte: AppCompatActivity(), OnMapReadyCallback {
     }
 
     fun getPoints(): ArrayList<LatLng>  {
-        val inputStream = assets.open("AC-PH.geojson")
-        val sb = inputStream.bufferedReader().use { it.readText() }
-        Log.i("json", sb)
+        val appPath = "/data/user/0/com.japhba.baroenvelo/files"
+        val database: PultusORM = PultusORM("local5.db", appPath)
         val points: ArrayList<LatLng> = ArrayList()
 
-        // Parse JSON
-        val json = JSONObject(sb)
-        val geometry = json.getJSONObject("geometry")
-        if (geometry != null) {
-            val type = geometry.getString("type")
-
-            // Our GeoJSON only has one feature: a line string
-            if (!TextUtils.isEmpty(type) && type.equals("LineString", ignoreCase = true)) {
-
-                // Get the Coordinates
-                val coords = geometry.getJSONArray("coordinates")
-
-                for (lc in 0..coords.length() - 1) {
-                    val coord = coords.getJSONArray(lc)
-                    val latLng = LatLng(coord.getDouble(1), coord.getDouble(0))
-                    points.add(latLng)
-                }
-            }
+        val punkte = database.find(Dreipunkt())
+        for(punkt in punkte) {
+            val pkt = punkt as Dreipunkt
+            points.add(LatLng(pkt.lat, pkt.lat))
         }
-
-        inputStream.close()
         return points
-
     }
 }

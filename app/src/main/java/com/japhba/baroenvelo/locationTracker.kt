@@ -20,13 +20,6 @@ import android.hardware.SensorManager
 import ninja.sakib.pultusorm.core.PultusORM
 
 
-class Dreipunkt {
-    var lat: Double = 0.0
-    var lng: Double = 0.0
-    var alt: String = ""
-}
-
-
 class LocationTrackingService : Service() {
 
     var locationManager: LocationManager? = null
@@ -90,6 +83,12 @@ class LocationTrackingService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+
+        var sensorManager = sensorManager2
+        sensorManager?.unregisterListener(LTRSensorListener(),
+                sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE)
+        )
+
         if (locationManager != null)
             for (i in 0..locationListeners.size) {
                 try {
@@ -107,7 +106,7 @@ class LocationTrackingService : Service() {
         const val INTENT = "Koordinaten"
 
         var coords: Location? = null
-        var alt: String? = null
+        var alt: Double? = null
 
         val INTERVAL = 1000.toLong() // In milliseconds
         val DISTANCE = 10.toFloat() // In meters
@@ -126,7 +125,7 @@ class LocationTrackingService : Service() {
                 coords = lastLocation
                 Log.i(TAG, lastLocation.toString())
 
-                updateData(lastLocation, "alt")
+                updateData(lastLocation, 0.0)
             }
 
             override fun onProviderDisabled(provider: String?) {
@@ -145,7 +144,7 @@ class LocationTrackingService : Service() {
             override fun onSensorChanged(event: SensorEvent?) {
                 val pressure = event!!.values[0]
                 alt = SensorManager.getAltitude(
-                        SensorManager.PRESSURE_STANDARD_ATMOSPHERE, pressure).toString()
+                        SensorManager.PRESSURE_STANDARD_ATMOSPHERE, pressure).toDouble()
                 updateData(coords, alt!!)
             }
 
@@ -155,7 +154,7 @@ class LocationTrackingService : Service() {
             }
         }
 
-        fun updateData(loc: Location?, alt: String) {
+        fun updateData(loc: Location?, alt: Double) {
             Log.i("Data", loc.toString() + alt)
             val appPath = "/data/user/0/com.japhba.baroenvelo/files"
             val database: PultusORM = PultusORM("local2.db", appPath)
