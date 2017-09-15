@@ -318,6 +318,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             for ((index, value) in punkte.withIndex()) {
                 if (index == 0) continue
                 val punkt = value as Dreipunkt
+                //Log.i("alt", punkt.alt.toString()) //check if pressure was recorded
                 lat += ":" + punkt.lat.toString()
                 lng += ":" + punkt.lng.toString()
                 alt += ":" + punkt.alt.toString()

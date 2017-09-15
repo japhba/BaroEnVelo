@@ -20,8 +20,20 @@ import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.annotations.PolylineOptions
 import com.mapbox.mapboxsdk.geometry.LatLng
 import com.mapbox.mapboxsdk.style.layers.CircleLayer
+
+import com.mapbox.mapboxsdk.style.functions.Function.property
+import com.mapbox.mapboxsdk.style.functions.Function.zoom
+import com.mapbox.mapboxsdk.style.functions.stops.Stop.stop
+import com.mapbox.mapboxsdk.style.functions.stops.Stops.categorical
+import com.mapbox.mapboxsdk.style.functions.stops.Stops.exponential
+import com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleColor
+import com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleRadius
+
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
 import com.mapbox.services.commons.geojson.Feature
+import com.mapbox.services.commons.geojson.FeatureCollection
+import com.mapbox.services.commons.geojson.LineString
+import kotlinx.android.synthetic.main.activity_kontrollzentrum.*
 import ninja.sakib.pultusorm.core.PultusORM
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -35,21 +47,32 @@ class Karte: AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(mapboxMap: MapboxMap) {
 
         val points = getPoints()
-        var geojsonString = ""
-        var features: ArrayList<String> = ArrayList()
+        //Log.i("sfas", points.toString())
+        var features: ArrayList<com.mapbox.services.commons.models.Position> = ArrayList()
 
-        var geojson = JSONObject()
 
         for(point in points) {
-            //TODO: proper JSON creation
-            val element = point.latitude.toString() + point.longitude.toString()
-            features.add(element)
+            features.add(com.mapbox.services.commons.models.Position.fromLngLat(point.longitude, point.latitude))
         }
 
-        //geojson.put("features", )
+        val lineString = LineString.fromCoordinates(features)
+        val featureCollection = FeatureCollection.fromFeatures(arrayOf(Feature.fromGeometry(lineString)))
 
-        val data = GeoJsonSource("dataSource", geojson.toString(0))
+        val data = GeoJsonSource("dataSource", featureCollection)
+        mapboxMap.addSource(data)
         val circleLayer = CircleLayer("circles", "dataSource")
+                .withProperties(circleRadius(
+                        zoom(
+                                exponential(
+                                        stop(12, circleRadius(1f)),
+                                        stop(22, circleRadius(50f))
+                                ).withBase(1.75f)
+                        )
+                ),
+                 circleColor(Color.parseColor("#0099ff"))
+                        )
+
+        mapboxMap.addLayer(circleLayer)
 
     }
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,7 +100,7 @@ class Karte: AppCompatActivity(), OnMapReadyCallback {
         val punkte = database.find(Dreipunkt())
         for(punkt in punkte) {
             val pkt = punkt as Dreipunkt
-            points.add(LatLng(pkt.lat, pkt.lat))
+            points.add(LatLng(pkt.lat, pkt.lng))
         }
         return points
     }
