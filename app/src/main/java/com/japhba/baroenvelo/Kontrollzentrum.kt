@@ -1,5 +1,6 @@
 package com.japhba.baroenvelo
 
+import android.Manifest
 import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -20,7 +21,9 @@ import java.util.*
 import android.location.LocationManager
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Handler
+import android.support.v4.app.ActivityCompat
 import android.support.v4.content.LocalBroadcastManager
 import android.widget.Button
 import com.github.kittinunf.fuel.Fuel
@@ -46,9 +49,21 @@ import org.sensingkit.sensingkitlib.data.SKLocationData
 
 import com.google.android.gms.*
 import com.google.android.gms.location.LocationServices
+import com.maxcruz.reactivePermissions.ReactivePermissions
+import com.maxcruz.reactivePermissions.entity.Permission
 
 class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
+    // Define a code to request the permissions
+    private val REQUEST_CODE = 10
+    // Instantiate the library
+    val reactive: ReactivePermissions = ReactivePermissions(this, REQUEST_CODE)
+
+    // Receive the response from the user and pass to the lib
+    override fun onRequestPermissionsResult(code: Int, permissions: Array<String>, results: IntArray) {
+        if (code == REQUEST_CODE)
+            reactive.receive(permissions, results)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,11 +71,33 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
         val initPoint = getSharedPreferences("lastPoint", Context.MODE_PRIVATE)
         val pointEditor = initPoint.edit()
-        pointEditor.putFloat("pressure", 0.0f)
+        pointEditor.putFloat("prs", 0.0f)
         pointEditor.putFloat("lat", 0.0f)
         pointEditor.putFloat("lng", 0.0f)
+        pointEditor.putFloat("alt", 0.0f)
+
+        //get permission
+        val location = Permission(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                R.string.rationale_permission_title,
+                false // If the user deny this permission, block the app
+        )
+
+        val permissions = listOf(location)
+        reactive.evaluate(permissions)
 
 
+        val locationManager: LocationManager
+        val locationProvider: LocationProvider
+
+        /* Get LocationManager and LocationProvider for GPS */
+        locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+        locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
+
+        /* Check if GPS LocationProvider supports altitude */
+        Log.i("supportsAlt", locationProvider.supportsAltitude().toString())
+
+        //initial startup
         if (!getSharedPreferences("Information", Context.MODE_PRIVATE).contains("user_id")) {
 
             val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE);
@@ -83,7 +120,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
         val sensorLib = SensingKitLib.getSensingKitLib(this)
 
 
-        Log.i("user", getSharedPreferences("Information", Context.MODE_PRIVATE).getString("user_id",""))
+        //Log.i("user", getSharedPreferences("Information", Context.MODE_PRIVATE).getInt("user_id",""))
 
         val textView: TextView = findViewById(R.id.Anzeige)
         textView.setOnClickListener {
@@ -97,7 +134,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
             sensorLib.subscribeSensorDataListener(SKSensorType.BAROMETER) { moduleType, sensorData ->
                 val raw = sensorData as SKBarometerData
-                //Log.i("alt", raw.pressure.toString())  // Print data in CSV format
+                Log.i("prs", raw.pressure.toString())  // Print data in CSV format
 
                 fun updateData(lat: Double, lng: Double, alt: Double) {
                     Log.i("Data", lat.toString() + ", " + lng.toString() + ", " + alt)
@@ -147,7 +184,9 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
             sensorLib.subscribeSensorDataListener(SKSensorType.LOCATION) { moduleType, sensorData ->
                 val raw = sensorData as SKLocationData
-                Log.i("loc", raw.latitude.toString() + ", " + raw.longitude.toString())  // Print data in CSV format
+
+                Log.i("accuracy", raw.accuracy.toString())
+                Log.i("loc", raw.latitude.toString() + ", " + raw.longitude.toString() + ", " + raw.altitude.toString())  // Print data in CSV format
 
                 fun updateData(lat: Double, lng: Double, alt: Double) {
                     Log.i("Data", lat.toString() + ", " + lng.toString() + ", " + alt)
@@ -190,7 +229,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
                 editor.putFloat("lng", raw.location.longitude.toFloat()).commit()
                 editor.putFloat("alt", raw.altitude.toFloat()).commit()
 
-                val pressure = sharedPref.getFloat("pressure", 0.0f)
+                val pressure = sharedPref.getFloat("prs", 0.0f)
 
                 tmpData(raw.latitude, raw.longitude, raw.altitude, pressure.toDouble())
 
@@ -212,7 +251,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             fun updateData(lat: Double, lng: Double, alt: Double) {
                 Log.i("Data", lat.toString() + ", " + lng.toString() + ", " + alt)
                 val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-                val database: PultusORM = PultusORM("local6.db", appPath)
+                val database: PultusORM = PultusORM("local7.db", appPath)
 
                 val dreipunkt: Dreipunkt = Dreipunkt()
                 if (lat != null) {
@@ -230,7 +269,6 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
             val appPath = "/data/user/0/com.japhba.baroenvelo/files"
             val tmpData: PultusORM = PultusORM("tmp.db", appPath)
-            //val database: PultusORM = PultusORM("local5.db", appPath)
 
             val punkte = tmpData.find(Vierpunkt())
             var moyenPrs = 0.0
@@ -243,9 +281,12 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             moyenPrs = moyenPrs/punkte.size
             moyenAlt = moyenAlt/punkte.size
 
+            Log.i("moyen", moyenAlt.toString() + ", " + moyenPrs.toString())
+
             for (value in punkte) {
                 val pkt = value as Vierpunkt
-                updateData(pkt.lat, pkt.lng, (pkt.prs/moyenPrs)*moyenAlt) //Dreisatz
+                //updateData(pkt.lat, pkt.lng, (pkt.prs/moyenPrs)*moyenAlt) //Dreisatz
+                updateData(pkt.lat, pkt.lng, pkt.prs) //Dreisatz
             }
 
             val cleanDB: PultusORM = PultusORM("tmp.db", appPath)
@@ -257,7 +298,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
         val uploadBtn: Button = findViewById(R.id.upload)
         uploadBtn.setOnClickListener {
             val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-            val database: PultusORM = PultusORM("local6.db", appPath)
+            val database: PultusORM = PultusORM("local7.db", appPath)
 
             val punkte = database.find(Dreipunkt())
             var lat = (punkte[0] as Dreipunkt).lat.toString()
@@ -278,6 +319,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
                 Log.i("debug", request.toString())
                 Log.i("response", response.toString())
+                //clearDB?
             }
         }
 
