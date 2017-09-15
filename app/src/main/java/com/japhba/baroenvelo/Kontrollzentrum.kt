@@ -1,7 +1,6 @@
 package com.japhba.baroenvelo
 
 import android.Manifest
-import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.hardware.Sensor
@@ -12,42 +11,31 @@ import android.location.*
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.TextView
-import kotlinx.android.synthetic.main.activity_kontrollzentrum.*
-import android.widget.Toast
 import android.util.Log
-import android.view.View
-import java.io.IOException
 import java.util.*
 import android.location.LocationManager
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
-import android.os.Handler
-import android.support.v4.app.ActivityCompat
 import android.support.v4.content.LocalBroadcastManager
 import android.widget.Button
 import com.github.kittinunf.fuel.Fuel
+/*import com.github.pwittchen.reactivesensors.library.ReactiveSensorEvent
+import com.github.pwittchen.reactivesensors.library.ReactiveSensorFilter
+import com.github.pwittchen.reactivesensors.library.ReactiveSensors*/
 import com.google.android.gms.common.api.GoogleApiClient
-import ninja.sakib.pultusorm.annotations.AutoIncrement
-import ninja.sakib.pultusorm.annotations.Ignore
-import ninja.sakib.pultusorm.annotations.PrimaryKey
 import ninja.sakib.pultusorm.core.PultusORM
-import ninja.sakib.pultusorm.core.PultusORMQuery
-import ninja.sakib.pultusorm.exceptions.PultusORMException
-import java.io.File
-import java.nio.file.FileSystem
 
-import org.sensingkit.sensingkitlib.SKException;
-import org.sensingkit.sensingkitlib.SKSensorType;
-import org.sensingkit.sensingkitlib.SensingKitLib;
-import org.sensingkit.sensingkitlib.SensingKitLibInterface;  //Document:  needed to add this to init SensingKit
-import org.sensingkit.sensingkitlib.data.SKSensorData;
-import org.sensingkit.sensingkitlib.SKSensorDataListener;
-import org.sensingkit.sensingkitlib.configuration.SKConfiguration
+
+//import rx.android.schedulers.AndroidSchedulers
+//import rx.functions.Action1
+
+//import org.sensingkit.*;
+import org.sensingkit.sensingkitlib.*
+
+
 import org.sensingkit.sensingkitlib.data.SKBarometerData
 import org.sensingkit.sensingkitlib.data.SKLocationData
 
-import com.google.android.gms.*
 import com.google.android.gms.location.LocationServices
 import com.maxcruz.reactivePermissions.ReactivePermissions
 import com.maxcruz.reactivePermissions.entity.Permission
@@ -119,7 +107,6 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
         val sensorLib = SensingKitLib.getSensingKitLib(this)
 
-
         //Log.i("user", getSharedPreferences("Information", Context.MODE_PRIVATE).getInt("user_id",""))
 
         val textView: TextView = findViewById(R.id.Anzeige)
@@ -132,14 +119,34 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             sensorLib.registerSensor(SKSensorType.BAROMETER)
             sensorLib.registerSensor(SKSensorType.LOCATION)
 
+            /*ReactiveSensors(this).observeSensor(Sensor.)
+                    .subscribeOn(rx.schedulers.Schedulers.computation())
+                    .filter(ReactiveSensorFilter.filterSensorChanged())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(Action1<ReactiveSensorEvent>() {
+                        fun call(reactiveSensorEvent: ReactiveSensorEvent) {
+                            val event: SensorEvent = reactiveSensorEvent.getSensorEvent();
+
+                            val x = event.values[0];
+                            val y = event.values[1];
+                            val z = event.values[2];
+
+                            val message: String = String.format("x = %f, y = %f, z = %f", x, y, z);
+
+                            Log.d("gyroscope readings", message);
+                        }
+                    });*/
+
+
+
             sensorLib.subscribeSensorDataListener(SKSensorType.BAROMETER) { moduleType, sensorData ->
                 val raw = sensorData as SKBarometerData
-                Log.i("prs", raw.pressure.toString())  // Print data in CSV format
+                //Log.i("prs", raw.pressure.toString())  // Print data in CSV format
 
                 fun updateData(lat: Double, lng: Double, alt: Double) {
                     Log.i("Data", lat.toString() + ", " + lng.toString() + ", " + alt)
                     val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-                    val database: PultusORM = PultusORM("local5.db", appPath)
+                    val database: PultusORM = PultusORM("local9.db", appPath)
 
                     val dreipunkt: Dreipunkt = Dreipunkt()
                     if (lat != null) {
@@ -173,17 +180,19 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
                 val sharedPref = getSharedPreferences("lastPoint", Context.MODE_PRIVATE);
                 val editor = sharedPref.edit()
-                editor.putFloat("pressure", raw.pressure).commit()
+                editor.putFloat("prs", raw.pressure).commit()
 
                 val lat = sharedPref.getFloat("lat", 0.0f)
                 val lng = sharedPref.getFloat("lng", 0.0f)
                 val alt = sharedPref.getFloat("alt", 0.0f)
 
-                tmpData(lat.toDouble(), lng.toDouble(), alt.toDouble(), raw.pressure.toDouble())
+                //tmpData(lat.toDouble(), lng.toDouble(), alt.toDouble(), raw.pressure.toDouble())
             }
 
             sensorLib.subscribeSensorDataListener(SKSensorType.LOCATION) { moduleType, sensorData ->
                 val raw = sensorData as SKLocationData
+
+                val coords: TextView = findViewById(R.id.coords)
 
                 Log.i("accuracy", raw.accuracy.toString())
                 Log.i("loc", raw.latitude.toString() + ", " + raw.longitude.toString() + ", " + raw.altitude.toString())  // Print data in CSV format
@@ -191,7 +200,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
                 fun updateData(lat: Double, lng: Double, alt: Double) {
                     Log.i("Data", lat.toString() + ", " + lng.toString() + ", " + alt)
                     val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-                    val database: PultusORM = PultusORM("local5.db", appPath)
+                    val database: PultusORM = PultusORM("local9.db", appPath)
 
                     val dreipunkt: Dreipunkt = Dreipunkt()
                     if (lat != null) {
@@ -230,17 +239,15 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
                 editor.putFloat("alt", raw.altitude.toFloat()).commit()
 
                 val pressure = sharedPref.getFloat("prs", 0.0f)
+                coords.text = raw.latitude.toString() + ", " + raw.longitude.toString() + ", " + pressure.toString()
 
                 tmpData(raw.latitude, raw.longitude, raw.altitude, pressure.toDouble())
 
             }
 
-
-
-
             sensorLib.startContinuousSensingWithAllRegisteredSensors()
-        }
 
+        }
 
         val stopBtn: Button = findViewById(R.id.stop)
         stopBtn.setOnClickListener {
@@ -251,7 +258,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             fun updateData(lat: Double, lng: Double, alt: Double) {
                 Log.i("Data", lat.toString() + ", " + lng.toString() + ", " + alt)
                 val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-                val database: PultusORM = PultusORM("local7.db", appPath)
+                val database: PultusORM = PultusORM("local9.db", appPath)
 
                 val dreipunkt: Dreipunkt = Dreipunkt()
                 if (lat != null) {
@@ -295,10 +302,13 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
         }
 
-        val uploadBtn: Button = findViewById(R.id.upload)
+        val uploadBtn: Button = findViewById(R.id.uploadBtn)
         uploadBtn.setOnClickListener {
             val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-            val database: PultusORM = PultusORM("local7.db", appPath)
+            val database: PultusORM = PultusORM("local9.db", appPath)
+
+            val textView: TextView = findViewById(R.id.uploadTxt)
+            textView.text = "Upload gestartet..."
 
             val punkte = database.find(Dreipunkt())
             var lat = (punkte[0] as Dreipunkt).lat.toString()
@@ -319,6 +329,8 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
                 Log.i("debug", request.toString())
                 Log.i("response", response.toString())
+                val textView: TextView = findViewById(R.id.uploadTxt)
+                textView.text = "Upload beendet."
                 //clearDB?
             }
         }

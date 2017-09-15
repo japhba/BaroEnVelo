@@ -41,6 +41,14 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.0'
 }
 
+dependencies {
+    //compile 'com.github.pwittchen:reactivesensors:0.1.2'
+}
+
+dependencies {
+    compile 'com.cocoahero.android:geojson:1.0.1@jar'
+}
+
 repositories {
     jcenter()
 }

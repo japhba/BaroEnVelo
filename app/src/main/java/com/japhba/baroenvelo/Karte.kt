@@ -12,9 +12,16 @@ import com.mapbox.mapboxsdk.maps.MapView
 import android.graphics.Color.parseColor
 import android.text.TextUtils
 import android.util.Log
+import com.cocoahero.android.geojson.GeoJSON
+import com.cocoahero.android.geojson.Point
+import com.cocoahero.android.geojson.Position
+import com.mapbox.mapboxsdk.annotations.Marker
 import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.annotations.PolylineOptions
 import com.mapbox.mapboxsdk.geometry.LatLng
+import com.mapbox.mapboxsdk.style.layers.CircleLayer
+import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
+import com.mapbox.services.commons.geojson.Feature
 import ninja.sakib.pultusorm.core.PultusORM
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -28,13 +35,23 @@ class Karte: AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(mapboxMap: MapboxMap) {
 
         val points = getPoints()
-        mapboxMap.addPolyline(PolylineOptions()
-                .addAll(points)
-                .color(Color.parseColor("#b2ebf2"))
-                .width(0.5f))
-                //.alpha = 0.1F
-           }
+        var geojsonString = ""
+        var features: ArrayList<String> = ArrayList()
 
+        var geojson = JSONObject()
+
+        for(point in points) {
+            //TODO: proper JSON creation
+            val element = point.latitude.toString() + point.longitude.toString()
+            features.add(element)
+        }
+
+        //geojson.put("features", )
+
+        val data = GeoJsonSource("dataSource", geojson.toString(0))
+        val circleLayer = CircleLayer("circles", "dataSource")
+
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -54,7 +71,7 @@ class Karte: AppCompatActivity(), OnMapReadyCallback {
 
     fun getPoints(): ArrayList<LatLng>  {
         val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-        val database: PultusORM = PultusORM("local5.db", appPath)
+        val database: PultusORM = PultusORM("local9.db", appPath)
         val points: ArrayList<LatLng> = ArrayList()
 
         val punkte = database.find(Dreipunkt())
