@@ -8,6 +8,7 @@ class Dreipunkt {
     var lat: Double = 0.0
     var lng: Double = 0.0
     var alt: Double = 0.0
+    var trip: Int = 0
 }
 
 class Vierpunkt {

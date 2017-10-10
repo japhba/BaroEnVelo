@@ -39,6 +39,7 @@ import org.sensingkit.sensingkitlib.data.SKLocationData
 import com.google.android.gms.location.LocationServices
 import com.maxcruz.reactivePermissions.ReactivePermissions
 import com.maxcruz.reactivePermissions.entity.Permission
+import ninja.sakib.pultusorm.core.PultusORMCondition
 
 class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
@@ -95,6 +96,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             val random = Random()
             val randUserID = random.nextInt((9999-1000)+1)+1000
             editor.putInt("user_id", randUserID)
+            editor.putInt("trip", 0)
             editor.commit();
 
         }
@@ -157,6 +159,9 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
                     }
                     //TODO: fancy pressure normalisation
                     dreipunkt.alt = alt
+
+                    val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE);
+                    dreipunkt.trip = sharedPref.getInt("trip", 0)
 
                     database.save(dreipunkt)
 
@@ -300,6 +305,10 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             cleanDB.drop(Vierpunkt())
             cleanDB.close()
 
+            val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE)
+            val trip = sharedPref.getInt("trip", 0)
+            sharedPref.edit().putInt("trip", trip + 1)
+
         }
 
         val uploadBtn: Button = findViewById(R.id.uploadBtn)
@@ -310,29 +319,43 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             val textView: TextView = findViewById(R.id.uploadTxt)
             textView.text = "Upload gestartet..."
 
-            val punkte = database.find(Dreipunkt())
-            var lat = (punkte[0] as Dreipunkt).lat.toString()
-            var lng = (punkte[0] as Dreipunkt).lng.toString()
-            var alt = (punkte[0] as Dreipunkt).alt.toString()
+            val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE)
+            val tripCount = sharedPref.getInt("trip", 0)
 
-            for ((index, value) in punkte.withIndex()) {
-                if (index == 0) continue
-                val punkt = value as Dreipunkt
-                //Log.i("alt", punkt.alt.toString()) //check if pressure was recorded
-                lat += ":" + punkt.lat.toString()
-                lng += ":" + punkt.lng.toString()
-                alt += ":" + punkt.alt.toString()
-                //break
-            }
+            for (i in 0..tripCount) {
 
-            //Log.i("request" , "{ \"userID\" : \"admin\" , \"lat\" : " + lat +" , \"lon\" : "  + lng +  " , \"alt\" : " + alt +  " , \"sternzeit\" : \"0\" }")
-            Fuel.post("http://baroenvelo.azurewebsites.net/insert.php", listOf("userID" to "admin", "lat" to lat, "lng" to lng, "alt" to alt, "sternzeit" to "0")).response { request, response, result ->
+                val condition: PultusORMCondition = PultusORMCondition.Builder().eq("trip", i).build()
 
-                Log.i("debug", request.toString())
-                Log.i("response", response.toString())
-                val textView: TextView = findViewById(R.id.uploadTxt)
-                textView.text = "Upload beendet."
-                //clearDB?
+                val punkte = database.find(Dreipunkt(), condition)
+                var lat = (punkte[0] as Dreipunkt).lat.toString()
+                var lng = (punkte[0] as Dreipunkt).lng.toString()
+                var alt = (punkte[0] as Dreipunkt).alt.toString()
+
+                for ((index, value) in punkte.withIndex()) {
+                    if (index < 2) continue
+                    val punkt = value as Dreipunkt
+                    //Log.i("alt", punkt.alt.toString()) //check if pressure was recorded
+                    if (punkt.lng < 7) {
+                        lat += ":" + punkt.lat.toString()
+                        lng += ":" + punkt.lng.toString()
+
+                        // *** Prs to Alt via International Formula ***
+                        var tmpalt = (288.15 / 0.0065) * (1 - Math.pow(punkt.alt / 1013.25, 1 / 5.255))
+
+                        alt += ":" + tmpalt.toString()
+                        //break
+                    }
+                }
+
+                //Log.i("request" , "{ \"userID\" : \"admin\" , \"lat\" : " + lat +" , \"lon\" : "  + lng +  " , \"alt\" : " + alt +  " , \"sternzeit\" : \"0\" }")
+                Fuel.post("http://baroenvelo.azurewebsites.net/insert.php", listOf("userID" to "admin", "lat" to lat, "lng" to lng, "alt" to alt, "sternzeit" to "0")).response { request, response, result ->
+
+                    Log.i("debug", request.toString())
+                    Log.i("response", response.toString())
+                    val textView: TextView = findViewById(R.id.uploadTxt)
+                    textView.text = "Upload beendet."
+                    //clearDB?
+                }
             }
         }
 
@@ -340,6 +363,26 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
         mapBtn.setOnClickListener {
             val showMap = Intent(this, Karte::class.java)
             startActivity(showMap)
+        }
+
+        val logBtn: Button = findViewById(R.id.log)
+        logBtn.setOnClickListener {
+            val showLog = Intent(this, com.japhba.baroenvelo.Log::class.java)
+            startActivity(showLog)
+        }
+
+        val deleteBtn: Button = findViewById(R.id.deleteButton)
+        deleteBtn.setOnClickListener {
+            val appPath = "/data/user/0/com.japhba.baroenvelo/files"
+            val database: PultusORM = PultusORM("local9.db", appPath)
+
+            database.drop(Dreipunkt())
+
+            val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE)
+            sharedPref.edit().putInt("trip", 0)
+
+            val textView: TextView = findViewById(R.id.uploadTxt)
+            textView.text = "Lokale Datenbank geleert."
         }
 
         val localBroadcastManager = LocalBroadcastManager.getInstance(this)

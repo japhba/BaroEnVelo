@@ -28,6 +28,10 @@
         <activity android:name=".Karte"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar">
         </activity>
+
+        <activity android:name=".Log"
+            android:theme="@style/AppTheme">
+        </activity>
     </application>
 
 </manifest>
