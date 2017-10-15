@@ -16,7 +16,7 @@ class Log: AppCompatActivity() {
         setContentView(R.layout.activity_log)
 
         val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-        val database: PultusORM = PultusORM("local9.db", appPath)
+        val database: PultusORM = PultusORM("local10.db", appPath)
 
         val logView: TextView = findViewById(R.id.logView)
 

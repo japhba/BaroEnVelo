@@ -96,7 +96,7 @@ class Karte: AppCompatActivity(), OnMapReadyCallback {
 
     fun getPoints(): ArrayList<LatLng>  {
         val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-        val database: PultusORM = PultusORM("local9.db", appPath)
+        val database: PultusORM = PultusORM("local10.db", appPath)
         val points: ArrayList<LatLng> = ArrayList()
 
         val punkte = database.find(Dreipunkt())

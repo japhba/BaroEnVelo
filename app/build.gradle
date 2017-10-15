@@ -49,6 +49,10 @@ dependencies {
     compile 'com.cocoahero.android:geojson:1.0.1@jar'
 }
 
+dependencies {
+    compile "org.jetbrains.anko:anko-commons:0.10.1"
+}
+
 repositories {
     jcenter()
 }

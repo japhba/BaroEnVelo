@@ -40,6 +40,10 @@ import com.google.android.gms.location.LocationServices
 import com.maxcruz.reactivePermissions.ReactivePermissions
 import com.maxcruz.reactivePermissions.entity.Permission
 import ninja.sakib.pultusorm.core.PultusORMCondition
+import org.jetbrains.anko.alert
+import org.jetbrains.anko.noButton
+import org.jetbrains.anko.toast
+import org.jetbrains.anko.yesButton
 
 class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
@@ -139,6 +143,11 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
                         }
                     });*/
 
+            val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE);
+            val trip = sharedPref.getInt("trip", 0)
+
+            val messager: TextView = findViewById(R.id.messager)
+            messager.text = "Protokoll " + trip + " gestartet."
 
 
             sensorLib.subscribeSensorDataListener(SKSensorType.BAROMETER) { moduleType, sensorData ->
@@ -148,7 +157,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
                 fun updateData(lat: Double, lng: Double, alt: Double) {
                     Log.i("Data", lat.toString() + ", " + lng.toString() + ", " + alt)
                     val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-                    val database: PultusORM = PultusORM("local9.db", appPath)
+                    val database: PultusORM = PultusORM("local10.db", appPath)
 
                     val dreipunkt: Dreipunkt = Dreipunkt()
                     if (lat != null) {
@@ -205,7 +214,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
                 fun updateData(lat: Double, lng: Double, alt: Double) {
                     Log.i("Data", lat.toString() + ", " + lng.toString() + ", " + alt)
                     val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-                    val database: PultusORM = PultusORM("local9.db", appPath)
+                    val database: PultusORM = PultusORM("local10.db", appPath)
 
                     val dreipunkt: Dreipunkt = Dreipunkt()
                     if (lat != null) {
@@ -263,7 +272,7 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             fun updateData(lat: Double, lng: Double, alt: Double) {
                 Log.i("Data", lat.toString() + ", " + lng.toString() + ", " + alt)
                 val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-                val database: PultusORM = PultusORM("local9.db", appPath)
+                val database: PultusORM = PultusORM("local10.db", appPath)
 
                 val dreipunkt: Dreipunkt = Dreipunkt()
                 if (lat != null) {
@@ -307,14 +316,17 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
             val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE)
             val trip = sharedPref.getInt("trip", 0)
-            sharedPref.edit().putInt("trip", trip + 1)
+            sharedPref.edit().putInt("trip", trip + 1).commit()
+
+            val messager: TextView = findViewById(R.id.messager)
+            messager.text = "Protkoll " + trip + " gespeichert."
 
         }
 
         val uploadBtn: Button = findViewById(R.id.uploadBtn)
         uploadBtn.setOnClickListener {
             val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-            val database: PultusORM = PultusORM("local9.db", appPath)
+            val database: PultusORM = PultusORM("local10.db", appPath)
 
             val textView: TextView = findViewById(R.id.uploadTxt)
             textView.text = "Upload gestartet..."
@@ -322,7 +334,11 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
             val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE)
             val tripCount = sharedPref.getInt("trip", 0)
 
+            val messager: TextView = findViewById(R.id.messager)
+
             for (i in 0..tripCount) {
+
+                messager.text = "Protkoll " + i + " wird hochgeladen..."
 
                 val condition: PultusORMCondition = PultusORMCondition.Builder().eq("trip", i).build()
 
@@ -373,16 +389,27 @@ class Kontrollzentrum : AppCompatActivity(), SensorEventListener {
 
         val deleteBtn: Button = findViewById(R.id.deleteButton)
         deleteBtn.setOnClickListener {
-            val appPath = "/data/user/0/com.japhba.baroenvelo/files"
-            val database: PultusORM = PultusORM("local9.db", appPath)
 
-            database.drop(Dreipunkt())
+            alert("Wirklich alle lokalen Protokolle löschen? Dies wird bereits hochgeladene Protokolle unversehrt lassen.") {
+                yesButton {
+                    val appPath = "/data/user/0/com.japhba.baroenvelo/files"
+                    val database: PultusORM = PultusORM("local10.db", appPath)
 
-            val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE)
-            sharedPref.edit().putInt("trip", 0)
+                    database.drop(Dreipunkt())
 
-            val textView: TextView = findViewById(R.id.uploadTxt)
-            textView.text = "Lokale Datenbank geleert."
+                    val sharedPref = getSharedPreferences("Information", Context.MODE_PRIVATE)
+                    sharedPref.edit().putInt("trip", 0)
+
+                    val textView: TextView = findViewById(R.id.uploadTxt)
+                    textView.text = "Lokale Datenbank geleert."
+                    toast("Lokale Datenbank geleert.")
+                }
+                noButton {}
+
+            }.show()
+
+
+
         }
 
         val localBroadcastManager = LocalBroadcastManager.getInstance(this)
